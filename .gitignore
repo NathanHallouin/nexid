@@ -1,0 +1,55 @@
+# Binaries
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+nexid
+
+# Test files
+*.test
+coverage.out
+coverage.html
+
+# Dependency directories
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env
+
+# Logs
+*.log
+logs/
+
+# Build cache
+.cache/
+
+# Temporary files
+tmp/
+temp/
+
+# Air (hot reload)
+tmp/
+
+# Docker
+docker-compose.override.yml
+
+# Secrets (never commit)
+*.pem
+*.key
+secrets/

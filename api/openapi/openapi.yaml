@@ -1,0 +1,297 @@
+openapi: 3.1.0
+info:
+  title: NexID API
+  description: Universal Digital Identity Platform API
+  version: 0.1.0
+  contact:
+    name: NexID Support
+    url: https://github.com/NathanHallouin/nexid
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://api.nexid.io
+    description: Production server
+
+tags:
+  - name: OAuth2
+    description: OAuth 2.1 / OpenID Connect endpoints
+  - name: Users
+    description: User management
+  - name: Consents
+    description: Consent management
+  - name: GDPR
+    description: GDPR compliance endpoints
+  - name: Clients
+    description: OAuth client management
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /oauth2/authorize:
+    get:
+      tags: [OAuth2]
+      summary: Authorization endpoint
+      operationId: authorize
+      parameters:
+        - name: response_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [code]
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: redirect_uri
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uri
+        - name: scope
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: code_challenge
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: code_challenge_method
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [S256]
+      responses:
+        '302':
+          description: Redirect to login or consent page
+
+  /oauth2/token:
+    post:
+      tags: [OAuth2]
+      summary: Token endpoint
+      operationId: token
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                grant_type:
+                  type: string
+                  enum: [authorization_code, refresh_token]
+                code:
+                  type: string
+                redirect_uri:
+                  type: string
+                code_verifier:
+                  type: string
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Token response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+
+  /oauth2/userinfo:
+    get:
+      tags: [OAuth2]
+      summary: UserInfo endpoint
+      operationId: userInfo
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+
+  /api/v1/users:
+    post:
+      tags: [Users]
+      summary: Register a new user
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /api/v1/users/me:
+    get:
+      tags: [Users]
+      summary: Get current user
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /api/v1/gdpr/export:
+    post:
+      tags: [GDPR]
+      summary: Export all user data
+      operationId: exportData
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Export request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GDPRExportResponse'
+
+  /api/v1/gdpr/delete:
+    post:
+      tags: [GDPR]
+      summary: Request account deletion
+      operationId: requestDeletion
+      security:
+        - bearerAuth: []
+      responses:
+        '202':
+          description: Deletion request accepted
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+        refresh_token:
+          type: string
+        scope:
+          type: string
+        id_token:
+          type: string
+
+    UserInfo:
+      type: object
+      properties:
+        sub:
+          type: string
+        name:
+          type: string
+        given_name:
+          type: string
+        family_name:
+          type: string
+        email:
+          type: string
+        email_verified:
+          type: boolean
+        phone_number:
+          type: string
+        phone_number_verified:
+          type: boolean
+        address:
+          type: object
+
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 12
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        email_verified:
+          type: boolean
+        preferred_username:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    GDPRExportResponse:
+      type: object
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, processing]
+        estimated_completion:
+          type: string
+          format: date-time
