@@ -8,27 +8,28 @@ NexID is a secure, GDPR-compliant identity provider that enables seamless authen
 
 - **OAuth 2.1 / OpenID Connect** compliant identity provider
 - **PKCE** required for all authorization flows
-- **WebAuthn/FIDO2** passwordless authentication support
+- **WebAuthn/FIDO2** passwordless authentication support (planned)
 - **AES-256-GCM** encryption for sensitive data at rest
 - **Argon2id** password hashing (OWASP recommended)
 - **GDPR compliant** with data export and deletion
 - **Audit logging** for all data access
 - **Rate limiting** to prevent abuse
 - **Horizontal scaling** ready
+- **Memory-safe** by design (Rust)
 
 ## Tech Stack
 
-- **Language**: Go 1.23
-- **Framework**: Gin
+- **Language**: Rust 1.84+
+- **Framework**: Axum
 - **Database**: PostgreSQL 16
 - **Cache/Sessions**: Redis 7
-- **Authentication**: OAuth 2.1, OpenID Connect, WebAuthn
+- **Authentication**: OAuth 2.1, OpenID Connect
 
 ## Quick Start
 
 ### Prerequisites
 
-- Go 1.23+
+- Rust 1.84+
 - Docker & Docker Compose
 - Make
 
@@ -46,7 +47,7 @@ cp .env.example .env
 make docker-up
 
 # Run the application
-make run
+cargo run
 ```
 
 ### Docker
@@ -67,10 +68,10 @@ docker compose logs -f api
 | `/oauth2/authorize` | GET | OAuth2 authorization |
 | `/oauth2/token` | POST | Token exchange |
 | `/oauth2/userinfo` | GET | User information |
-| `/oauth2/revoke` | POST | Token revocation |
 | `/oauth2/.well-known/openid-configuration` | GET | OIDC discovery |
-| `/oauth2/.well-known/jwks.json` | GET | JSON Web Key Set |
+| `/.well-known/jwks.json` | GET | JSON Web Key Set |
 | `/api/v1/users` | POST | Register user |
+| `/api/v1/auth/login` | POST | User login |
 | `/api/v1/users/me` | GET | Get current user |
 | `/api/v1/consents` | GET | List granted consents |
 | `/api/v1/gdpr/export` | POST | Export all user data |
@@ -79,24 +80,26 @@ docker compose logs -f api
 ## Architecture
 
 ```
-cmd/
-├── api/          # API server entry point
-└── cli/          # CLI tools
-
-internal/
-├── auth/         # Authentication logic
-├── config/       # Configuration
-├── consent/      # Consent management
-├── crypto/       # Encryption & hashing
-├── middleware/   # HTTP middleware
-├── repository/   # Data access layer
-└── user/         # User management
-
-pkg/
-├── jwt/          # JWT utilities
-├── oauth2/       # OAuth2 implementation
-├── oidc/         # OpenID Connect
-└── validation/   # Input validation
+src/
+├── main.rs           # Entry point, server setup
+├── config/           # Configuration
+├── crypto/           # Encryption & hashing
+│   ├── encryption.rs # AES-256-GCM
+│   └── password.rs   # Argon2id
+├── db/               # Database layer
+│   ├── users.rs      # User repository
+│   ├── oauth_clients.rs
+│   └── consents.rs
+├── handlers/         # HTTP handlers
+├── middleware/       # Security headers, etc.
+├── models/           # DTOs and domain types
+├── oauth2/           # OAuth2/OIDC implementation
+│   ├── authorize.rs
+│   ├── token.rs
+│   ├── userinfo.rs
+│   └── discovery.rs
+├── error.rs          # Error types
+└── routes.rs         # Route definitions
 ```
 
 ## Security
@@ -106,7 +109,8 @@ pkg/
 - OAuth 2.1 with PKCE required (no implicit flow)
 - Constant-time comparison for security-sensitive operations
 - Rate limiting on all endpoints
-- Security headers (CSP, HSTS, X-Frame-Options, etc.)
+- Security headers (HSTS, X-Frame-Options, X-Content-Type-Options, etc.)
+- Memory-safe by design (no buffer overflows, use-after-free, etc.)
 
 ## GDPR Compliance
 
@@ -115,6 +119,14 @@ pkg/
 - **Consent Management**: Granular control over data sharing
 - **Audit Logging**: All data access is logged
 - **Data Minimization**: Only collect what's necessary
+
+## Why Rust?
+
+- **Memory Safety**: No buffer overflows, use-after-free, or data races
+- **Performance**: Comparable to C/C++, no garbage collector pauses
+- **Predictable Latency**: Critical for authentication endpoints
+- **Security**: Type system prevents many classes of vulnerabilities
+- **Concurrency**: Safe, fearless concurrency with async/await
 
 ## License
 

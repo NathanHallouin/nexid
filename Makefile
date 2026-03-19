@@ -3,7 +3,6 @@
 # Variables
 BINARY_NAME=nexid
 VERSION?=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
-LDFLAGS=-ldflags "-w -s -X main.Version=$(VERSION)"
 
 # Colors
 GREEN=\033[0;32m
@@ -16,32 +15,33 @@ help: ## Show this help
 
 build: ## Build the binary
 	@echo "Building $(BINARY_NAME)..."
-	go build $(LDFLAGS) -o bin/$(BINARY_NAME) ./cmd/api
+	cargo build --release
 
 run: ## Run the application
 	@echo "Running $(BINARY_NAME)..."
-	go run ./cmd/api
+	cargo run
 
-dev: ## Run with hot reload (requires air)
-	air
+dev: ## Run with hot reload (requires cargo-watch)
+	cargo watch -x run
 
 ## Testing
 
 test: ## Run tests
-	go test -v -race -cover ./...
+	cargo test
 
-test-coverage: ## Run tests with coverage report
-	go test -v -race -coverprofile=coverage.out ./...
-	go tool cover -html=coverage.out -o coverage.html
+test-coverage: ## Run tests with coverage (requires cargo-tarpaulin)
+	cargo tarpaulin --out Html
 
 ## Linting
 
-lint: ## Run linters
-	golangci-lint run ./...
+lint: ## Run clippy
+	cargo clippy -- -D warnings
 
 fmt: ## Format code
-	go fmt ./...
-	goimports -w .
+	cargo fmt
+
+fmt-check: ## Check code formatting
+	cargo fmt -- --check
 
 ## Database
 
@@ -75,27 +75,27 @@ docker-clean: ## Remove all containers and volumes
 
 ## Security
 
-generate-key: ## Generate a new encryption key
+generate-key: ## Generate a new 32-byte encryption key (base64)
 	@openssl rand -base64 32
 
-generate-secret: ## Generate a new JWT secret
+generate-secret: ## Generate a new JWT secret (base64)
 	@openssl rand -base64 64
 
 ## Misc
 
 clean: ## Clean build artifacts
-	rm -rf bin/
-	rm -f coverage.out coverage.html
+	cargo clean
 
 deps: ## Install dependencies
-	go mod download
-	go mod tidy
+	cargo fetch
 
 update-deps: ## Update dependencies
-	go get -u ./...
-	go mod tidy
+	cargo update
 
 install-tools: ## Install development tools
-	go install github.com/air-verse/air@latest
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-	go install golang.org/x/tools/cmd/goimports@latest
+	cargo install cargo-watch
+	cargo install cargo-tarpaulin
+	cargo install sqlx-cli
+
+audit: ## Run security audit
+	cargo audit
