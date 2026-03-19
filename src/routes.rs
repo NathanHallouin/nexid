@@ -38,7 +38,7 @@ pub fn api_v1_routes(state: Arc<AppState>) -> Router {
         .route("/api/v1/users/me", delete(users::delete_me))
         // Consents
         .route("/api/v1/consents", get(consents::list_consents))
-        .route("/api/v1/consents/:id", delete(consents::revoke_consent))
+        .route("/api/v1/consents/{id}", delete(consents::revoke_consent))
         // GDPR
         .route("/api/v1/gdpr/export", post(gdpr::export_data))
         .route("/api/v1/gdpr/delete", post(gdpr::request_deletion))

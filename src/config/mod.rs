@@ -2,19 +2,51 @@ use std::time::Duration;
 
 use serde::Deserialize;
 
-/// Application configuration
+/// Raw configuration from environment
 #[derive(Debug, Clone, Deserialize)]
+struct RawConfig {
+    #[serde(default = "default_environment")]
+    environment: String,
+
+    #[serde(default = "default_port")]
+    port: u16,
+
+    #[serde(default = "default_version")]
+    version: String,
+
+    database_url: String,
+    redis_url: String,
+    jwt_secret: String,
+
+    #[serde(default = "default_access_token_ttl")]
+    access_token_ttl: u64,
+
+    #[serde(default = "default_refresh_token_ttl")]
+    refresh_token_ttl: u64,
+
+    encryption_key: String,
+
+    #[serde(default = "default_issuer")]
+    issuer: String,
+
+    /// Comma-separated list of allowed origins
+    #[serde(default = "default_allowed_origins_str")]
+    allowed_origins: String,
+
+    #[serde(default = "default_rate_limit")]
+    rate_limit: u32,
+}
+
+/// Application configuration
+#[derive(Debug, Clone)]
 pub struct Config {
     /// Environment (development, staging, production)
-    #[serde(default = "default_environment")]
     pub environment: String,
 
     /// Server port
-    #[serde(default = "default_port")]
     pub port: u16,
 
     /// Application version
-    #[serde(default = "default_version")]
     pub version: String,
 
     /// PostgreSQL connection URL
@@ -27,26 +59,21 @@ pub struct Config {
     pub jwt_secret: String,
 
     /// Access token TTL in seconds
-    #[serde(default = "default_access_token_ttl")]
     pub access_token_ttl: u64,
 
     /// Refresh token TTL in seconds
-    #[serde(default = "default_refresh_token_ttl")]
     pub refresh_token_ttl: u64,
 
     /// AES-256 encryption key (base64 encoded, 32 bytes)
     pub encryption_key: String,
 
     /// OAuth2 issuer URL
-    #[serde(default = "default_issuer")]
     pub issuer: String,
 
     /// Allowed CORS origins
-    #[serde(default = "default_allowed_origins")]
     pub allowed_origins: Vec<String>,
 
     /// Rate limit (requests per minute)
-    #[serde(default = "default_rate_limit")]
     pub rate_limit: u32,
 }
 
@@ -74,8 +101,8 @@ fn default_issuer() -> String {
     "http://localhost:8080".to_string()
 }
 
-fn default_allowed_origins() -> Vec<String> {
-    vec!["http://localhost:3000".to_string()]
+fn default_allowed_origins_str() -> String {
+    "http://localhost:3000".to_string()
 }
 
 fn default_rate_limit() -> u32 {
@@ -89,8 +116,30 @@ impl Config {
             .add_source(config::Environment::default().separator("__"))
             .build()?;
 
-        let settings: Config = config.try_deserialize()?;
-        Ok(settings)
+        let raw: RawConfig = config.try_deserialize()?;
+
+        // Parse comma-separated origins
+        let allowed_origins: Vec<String> = raw
+            .allowed_origins
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+
+        Ok(Config {
+            environment: raw.environment,
+            port: raw.port,
+            version: raw.version,
+            database_url: raw.database_url,
+            redis_url: raw.redis_url,
+            jwt_secret: raw.jwt_secret,
+            access_token_ttl: raw.access_token_ttl,
+            refresh_token_ttl: raw.refresh_token_ttl,
+            encryption_key: raw.encryption_key,
+            issuer: raw.issuer,
+            allowed_origins,
+            rate_limit: raw.rate_limit,
+        })
     }
 
     /// Get access token TTL as Duration

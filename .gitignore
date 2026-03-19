@@ -58,3 +58,4 @@ secrets/
 # Added by cargo
 
 /target
+CLAUDE.md
