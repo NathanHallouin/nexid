@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use axum::{extract::State, Form, Json};
 
-use crate::error::AppError;
 use crate::models::{TokenRequest, TokenResponse, OAuth2Error};
 use crate::AppState;
 

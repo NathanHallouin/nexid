@@ -3,7 +3,7 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 use super::Database;
-use crate::error::{AppError, Result};
+use crate::error::Result;
 
 /// User record from database
 #[derive(Debug, Clone, FromRow)]

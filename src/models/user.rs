@@ -2,6 +2,15 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
+/// Validate username format (alphanumeric + underscore only)
+fn validate_username(username: &str) -> Result<(), validator::ValidationError> {
+    if username.chars().all(|c| c.is_alphanumeric() || c == '_') {
+        Ok(())
+    } else {
+        Err(validator::ValidationError::new("invalid_username"))
+    }
+}
+
 /// User registration request
 #[derive(Debug, Deserialize, Validate)]
 pub struct RegisterRequest {
@@ -20,15 +29,8 @@ pub struct RegisterRequest {
         max = 30,
         message = "Username must be between 3 and 30 characters"
     ))]
-    #[validate(regex(
-        path = "crate::models::user::USERNAME_REGEX",
-        message = "Username can only contain letters, numbers, and underscores"
-    ))]
+    #[validate(custom(function = "validate_username"))]
     pub username: Option<String>,
-}
-
-lazy_static::lazy_static! {
-    static ref USERNAME_REGEX: regex::Regex = regex::Regex::new(r"^[a-zA-Z0-9_]+$").unwrap();
 }
 
 /// User login request
@@ -40,6 +42,7 @@ pub struct LoginRequest {
 }
 
 /// User profile update request
+#[allow(dead_code)]
 #[derive(Debug, Deserialize, Validate)]
 pub struct UpdateProfileRequest {
     #[validate(length(max = 100))]

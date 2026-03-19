@@ -63,10 +63,6 @@ reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-feature
 # URL parsing
 url = "2.5"
 
-# Regex
-regex = "1.11"
-lazy_static = "1.5"
-
 [dev-dependencies]
 tokio-test = "0.4"
 wiremock = "0.6"
